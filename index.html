@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autonomous Compliance | Agentic KYC</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg: #F8F9FA; --text-main: #0B0F19; --text-muted: #4B5563; --accent: #2563EB;
+            --bene-primary: #046bd2; --bene-navy: #003388; --bene-bg: #F0F5FA; --bene-card: #ffffff;
+            --bene-text: #1e293b; --bene-text-muted: #475569; --bene-border: #D1D5DB;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background-color: var(--bg); color: var(--text-main); font-family: 'Manrope', sans-serif; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+
+        /* Navigation */
+        #main-nav { position: fixed; top: 0; left: 0; right: 0; height: 70px; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); z-index: 1000; display: flex; align-items: center; justify-content: center; gap: 2rem; border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .nav-btn { background: none; border: none; font-family: 'Manrope', sans-serif; font-size: 0.9rem; font-weight: 600; color: var(--text-muted); cursor: pointer; padding: 0.5rem 1rem; border-radius: 20px; transition: all 0.3s; }
+        .nav-btn.active { background: var(--text-main); color: #fff; }
+        .tab-content { display: none; min-height: 100vh; padding-top: 70px; }
+        .tab-content.active { display: block; }
+
+        /* WebGL Background */
+        #webgl-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; }
+        .ambient-gradient { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: radial-gradient(circle at center, transparent 0%, rgba(248,249,250,0.8) 100%); z-index: 1; pointer-events: none; }
+        .pitch-wrapper { position: relative; z-index: 10; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 0 5vw; }
+        
+        /* Pitch Styles */
+        .pitch-section { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; padding: 15vh 0; position: relative; }
+        .reveal-heading { font-family: 'Playfair Display', serif; font-weight: 700; font-size: clamp(4rem, 8vw, 8.5rem); line-height: 1.1; letter-spacing: -0.02em; text-shadow: 0 4px 20px rgba(255,255,255,0.8); color: #0f172a; }
+        .reveal-heading-2 { font-family: 'Playfair Display', serif; font-weight: 700; font-size: clamp(3rem, 5.5vw, 5.5rem); line-height: 1.1; margin-bottom: 3rem; text-shadow: 0 4px 20px rgba(255,255,255,0.8); color: #0f172a;}
+        .reveal-p { font-size: clamp(1.25rem, 1.6vw, 1.5rem); color: #1e293b; line-height: 1.7; max-width: 800px; font-weight: 500; text-shadow: 0 2px 10px rgba(255,255,255,0.9); }
+        .pitch-label { font-size: 1rem; text-transform: uppercase; letter-spacing: 0.3em; color: var(--accent); font-weight: 800; margin-bottom: 2rem; display: block; text-shadow: 0 2px 10px rgba(255,255,255,0.9); }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8vw; align-items: start; position: relative; z-index: 10; }
+        .transparent-module { margin-top: 4rem; border-left: 4px solid var(--accent); background: rgba(255,255,255,0.65); backdrop-filter: blur(8px); padding: 2rem 2.5rem; border-radius: 0 16px 16px 0; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .transparent-module h4 { font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem; font-family: 'Playfair Display', serif; color: #0f172a; }
+        .framework-step { display: grid; grid-template-columns: 1fr 2fr; gap: 4vw; padding: 3rem 4rem; margin-bottom: 2rem; background: rgba(255,255,255,0.75); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.9); border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); position: relative; z-index: 10; }
+        .framework-step:last-child { margin-bottom: 4rem; }
+        .step-number { font-family: 'Playfair Display', serif; font-size: 5rem; line-height: 1; opacity: 0.25; font-weight: 700; color: var(--accent); }
+        .step-title { font-size: 2.6rem; margin-top: 1rem; font-weight: 700; font-family: 'Playfair Display', serif; text-shadow: 0 4px 15px rgba(255,255,255,0.9); color: #0f172a;}
+        .reveal-text { overflow: hidden; display: inline-block; vertical-align: top; }
+        .reveal-text span { display: inline-block; }
+        .mt-large { margin-top: 10vh; }
+
+        /* Architecture Styles */
+        #tab-arch { background-color: #fff; }
+        .arch-header { text-align: center; padding: 4rem 2rem; background: #FAFAFA; border-bottom: 1px solid #EAEAEA; }
+        .arch-header h1 { font-family: 'Playfair Display', serif; font-size: 3rem; color: #111; }
+        .arch-container { max-width: 1200px; margin: 4rem auto; padding: 0 2rem; }
+        .arch-section { margin-bottom: 5rem; }
+        .arch-section h2 { font-family: 'Playfair Display', serif; font-size: 2.2rem; margin-bottom: 1.5rem; color: #111; }
+        .arch-section p { font-size: 1.1rem; color: var(--text-muted); line-height: 1.7; margin-bottom: 1rem; }
+        
+        /* Premium HTML/CSS Cloud Architecture Diagram */
+        .cloud-diagram { background: #0f172a; border-radius: 16px; padding: 3rem; box-shadow: 0 20px 40px rgba(0,0,0,0.1); margin-top: 2rem; position: relative; overflow: hidden; }
+        .cloud-diagram::before { content: ''; position: absolute; top:0; left:0; width:100%; height:100%; background: radial-gradient(circle at top right, rgba(37,99,235,0.15) 0%, transparent 50%); pointer-events: none;}
+        .tier { border: 1px dashed rgba(255,255,255,0.2); border-radius: 12px; padding: 2rem; margin-bottom: 2rem; position: relative; }
+        .tier::before { content: attr(data-label); position: absolute; top: -12px; left: 2rem; background: #0f172a; padding: 0 1rem; font-size: 0.8rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; }
+        .nodes-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; }
+        .node { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 1.5rem; display: flex; flex-direction: column; align-items: center; text-align: center; color: #fff; transition: transform 0.3s, background 0.3s; }
+        .node:hover { transform: translateY(-5px); background: rgba(255,255,255,0.1); border-color: var(--bene-primary); }
+        .node-icon { width: 48px; height: 48px; margin-bottom: 1rem; fill: currentColor; }
+        .node-icon svg { width: 100%; height: 100%; }
+        .node-title { font-weight: 600; margin-bottom: 0.5rem; }
+        .node-sub { font-size: 0.8rem; color: #94a3b8; }
+        .flow-arrow { text-align: center; margin: -1rem 0 1rem 0; color: var(--bene-primary); font-size: 1.5rem; }
+
+        .stack-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-top: 3rem; }
+        .stack-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 2rem; }
+        .stack-card h3 { font-size: 1.4rem; color: #0f172a; margin-bottom: 1rem; display:flex; align-items:center; gap:0.5rem;}
+        .stack-card ul { list-style: none; margin-top: 1.5rem; }
+        .stack-card ul li { margin-bottom: 1rem; font-size: 0.95rem; color: #475569; position: relative; padding-left: 1.5rem; line-height: 1.5; }
+        .stack-card ul li::before { content: '→'; position: absolute; left: 0; color: var(--bene-primary); font-weight: bold; }
+
+        /* Demo App Styles */
+        #tab-demo { background-color: var(--bene-bg); color: var(--bene-text); }
+        .bene-header { background-color: var(--bene-primary); padding: 1.5rem 4rem; display: flex; justify-content: space-between; align-items: center; }
+        .bene-logo { font-size: 1.5rem; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
+        
+        .role-switcher { display: flex; gap: 0.5rem; background: rgba(255,255,255,0.2); padding: 0.25rem; border-radius: 6px; }
+        .role-btn { background: transparent; border: none; color: #fff; padding: 0.5rem 1rem; border-radius: 4px; font-weight: 600; cursor: pointer; transition: background 0.2s; font-size: 0.85rem;}
+        .role-btn.active { background: #fff; color: var(--bene-primary); }
+
+        .role-view { display: none; }
+        .role-view.active { display: block; }
+        .demo-step { display: none; }
+        .demo-step.active { display: block; }
+
+        .bene-card { background: var(--bene-card); max-width: 900px; margin: 4rem auto; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); padding: 3rem; border: 1px solid #E5E7EB; position: relative; overflow: hidden;}
+        
+        /* Futuristic UI Elements */
+        .futuristic-scanner { position: absolute; top: 0; left: -100%; width: 50%; height: 4px; background: linear-gradient(90deg, transparent, var(--bene-primary), transparent); z-index: 100; display: none; }
+        .scanning .futuristic-scanner { display: block; animation: scanAnim 2s infinite linear; }
+        @keyframes scanAnim { 0% { left: -100%; } 100% { left: 200%; } }
+
+        .bene-title { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--bene-text); }
+        .bene-subtitle { font-size: 0.95rem; color: var(--bene-text-muted); margin-bottom: 2rem; }
+
+        .bene-input-group { margin-bottom: 1.5rem; }
+        .bene-label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--bene-text); margin-bottom: 0.5rem; }
+        .bene-input, .bene-textarea, .bene-select { width: 100%; padding: 0.75rem 1rem; border: 1px solid var(--bene-border); border-radius: 6px; font-size: 1rem; color: var(--bene-text); font-family: inherit; transition: border-color 0.2s; }
+        .bene-textarea { min-height: 100px; resize: vertical; }
+        .bene-input:focus, .bene-textarea:focus, .bene-select:focus { outline: none; border-color: var(--bene-primary); box-shadow: 0 0 0 3px rgba(4, 107, 210, 0.1); }
+        .input-warning { border-color: #ef4444; background: #fef2f2; }
+        .input-highlight { border-color: #f59e0b; background: #fffbeb; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2); }
+        .warning-text { color: #ef4444; font-size: 0.75rem; margin-top: 0.25rem; display: block; font-weight: 600; }
+        .highlight-text { color: #d97706; font-size: 0.75rem; margin-top: 0.25rem; display: block; font-weight: 600; }
+
+        .bene-btn { background: var(--bene-primary); color: #fff; border: none; padding: 0.75rem 1.5rem; font-size: 1rem; font-weight: 600; border-radius: 6px; cursor: pointer; transition: background 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;}
+        .bene-btn:hover { background: var(--bene-navy); }
+        .bene-btn-secondary { background: #fff; color: var(--bene-text); border: 1px solid var(--bene-border); }
+        .bene-btn-secondary:hover { background: #F9FAFB; }
+        .bene-btn-danger { background: #ef4444; }
+        .bene-btn-danger:hover { background: #dc2626; }
+        .bene-btn-success { background: #10b981; }
+        .bene-btn-success:hover { background: #059669; }
+
+        .accordion-item { border: 1px solid var(--bene-border); border-radius: 6px; margin-bottom: 1rem; overflow: hidden;}
+        .accordion-header { background: #f8fafc; padding: 1rem; cursor: pointer; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+        .accordion-body { padding: 1.5rem; display: none; background: #fff; border-top: 1px solid var(--bene-border); }
+        .accordion-body.active { display: block; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .form-full { grid-column: 1 / -1; }
+
+        .progress-container { background: #f1f5f9; border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem; display: flex; align-items: center; gap: 2rem;}
+        .progress-circle { width: 80px; height: 80px; border-radius: 50%; background: conic-gradient(var(--bene-primary) 50%, #e2e8f0 0); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.2rem; color: var(--bene-primary); }
+        .progress-circle::after { content: ""; width: 64px; height: 64px; background: #f1f5f9; border-radius: 50%; position: absolute; }
+        .progress-val { position: relative; z-index: 2; }
+        .progress-text { flex: 1; }
+        .progress-text h4 { margin-bottom: 0.25rem; }
+        .progress-text p { font-size: 0.85rem; color: var(--text-muted); }
+
+        .console-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-bottom: 1rem; }
+        .console-pane { background: #0f172a; border: 1px solid #334155; border-radius: 6px; overflow: hidden; display:flex; flex-direction: column; }
+        .pane-header { background: #1e293b; padding: 0.5rem 1rem; font-size: 0.75rem; font-weight: 700; border-bottom: 1px solid #334155; display:flex; align-items:center; gap: 0.5rem; color: #fff;}
+        .pane-body { padding: 1rem; font-family: monospace; font-size: 0.8rem; color: #10b981; height: 200px; overflow-y: auto; background: #0f172a;}
+        
+        .audit-log { font-family: monospace; font-size: 0.85rem; color: #475569; background: #f8fafc; padding: 1rem; border-radius: 6px; border: 1px solid #e2e8f0; height: 200px; overflow-y: auto; }
+        .audit-item { margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid #e2e8f0; }
+        .audit-time { color: var(--bene-primary); font-weight: bold; margin-right: 0.5rem;}
+        .gdrive-upload { border: 2px dashed #cbd5e1; border-radius: 6px; padding: 1rem; text-align: center; background: #f8fafc; cursor: pointer; transition: all 0.2s; font-size: 0.85rem; font-weight: 500;}
+        .gdrive-upload:hover { border-color: var(--bene-primary); background: #f0f9ff;}
+    </style>
+</head>
+<body>
+
+    <nav id="main-nav">
+        <button class="nav-btn active" onclick="switchTab('tab-pitch', this)">1. Strategic Pitch</button>
+        <button class="nav-btn" onclick="switchTab('tab-arch', this)">2. Architecture</button>
+        <button class="nav-btn" onclick="switchTab('tab-demo', this)">3. Interactive Demo</button>
+    </nav>
+
+    <canvas id="webgl-canvas"></canvas>
+    <div class="ambient-gradient"></div>
+
+    <!-- TAB 1: PITCH -->
+    <div id="tab-pitch" class="tab-content active">
+        <div class="pitch-wrapper">
+            <section class="container pitch-section" style="justify-content: center; align-items: flex-start; text-align: left;">
+                <span class="pitch-label">Compliance as a Growth Engine</span>
+                <h1 class="reveal-heading">Architecting the Agentic<br><i>Onboarding Value Stream.</i></h1>
+                <p class="reveal-p">Transforming KYC from a back-office OpEx burden into a strategic enabler for hyper-growth. Benepay deploys an orchestration of probabilistic AI agents to achieve straight-through processing at zero marginal cost.</p>
+            </section>
+            
+            <section class="container pitch-section mt-large">
+                <span class="pitch-label" style="color: var(--text-muted);">Deep Domain Expertise</span>
+                <div class="grid-2">
+                    <div><h2 class="reveal-heading-2">The Bottleneck of<br>Outsourced KYC</h2></div>
+                    <div>
+                        <p class="reveal-p" style="margin-bottom: 2rem;">Currently, Benepay relies on manual 3rd-party outsourcing to conduct KYC and entity verification. While this externalizes the labor, it creates a massive black box: you surrender control over the client onboarding experience, incur high marginal costs per application, and face unpredictable delays when resolving complex Ultimate Beneficial Owners (UBOs).</p>
+                        
+                        <div class="transparent-module reveal-card">
+                            <h4>The OpEx Drag of Manual Verification</h4>
+                            <p>Every time an outsourced analyst manually cross-references FATF Grey Lists or extracts data from complex Trust Deeds, your Time-to-Revenue is delayed. Relying on external human dependencies for baseline compliance destroys operational unit economics as transaction volumes scale.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="sec-solution" class="container pitch-section mt-large">
+                <span class="pitch-label">The Futuristic Solution</span>
+                <h2 class="reveal-heading-2" style="max-width: 1000px;">
+                    Supervisor-Worker Agent Swarm
+                </h2>
+                <p class="reveal-p" style="margin-bottom: 6rem; max-width: 1000px;">
+                    Benepay transcends outsourced manual labor by implementing a probabilistic Agentic architecture. We deploy a synthetic, in-house compliance team where specialized LLMs autonomously gather unstructured data, debate risk profiles, and pre-fill compliance requirements—returning speed and operational leverage directly to your institution.
+                </p>
+
+                <div class="framework-step reveal-card">
+                    <div><div class="step-number">01</div><div class="step-title">Agentic Auto-Discovery</div></div>
+                    <div><p>The client simply provides a Registration Number. The <strong>Registry Agent</strong> instantly crawls Companies House and Global LEI registers, while the <strong>Vision Agent</strong> parses complex Trust Deeds to establish a verified "Golden Record" of ownership.</p></div>
+                </div>
+
+                <div class="framework-step reveal-card">
+                    <div><div class="step-number">02</div><div class="step-title">Algorithmic Gap Analysis</div></div>
+                    <div><p>Rather than presenting clients with a monolithic 50-field form, the <strong>Supervisor Agent</strong> maps the discovered entity data against strict regulatory schemas. It intelligently highlights <i>only</i> the missing mandatory fields (e.g., specific Sources of Wealth), creating a frictionless, curated user experience.</p></div>
+                </div>
+
+                <div class="framework-step reveal-card">
+                    <div><div class="step-number">03</div><div class="step-title">Probabilistic Veracity Checks</div></div>
+                    <div><p>The <strong>Risk Agent</strong> utilizes RAG (Retrieval-Augmented Generation) against FATF profiles in real-time, instantly flagging synthetic identities, high-risk operational geographies, or logically inconsistent inputs before the dossier even reaches human review.</p></div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- TAB 2: ARCHITECTURE -->
+    <div id="tab-arch" class="tab-content">
+        <div class="arch-header">
+            <h1>Cloud Solution Architecture</h1>
+            <p style="color: #666; margin-top: 1rem;">Enterprise Topology: Azure AI Foundry & Google ADK</p>
+        </div>
+        
+        <div class="arch-container">
+            <div class="arch-section">
+                <h2>1. Component Architecture Blueprint</h2>
+                <p>The system utilizes a secure, ring-fenced enterprise cloud environment. The orchestration layer routes intent, while narrow-scope agents interact securely with vector stores for compliance RAG.</p>
+                
+                <div class="cloud-diagram">
+                    <div class="tier" data-label="Presentation Tier">
+                        <div class="nodes-grid" style="grid-template-columns: 1fr;">
+                            <div class="node" style="background: rgba(37,99,235,0.2); border-color: var(--bene-primary);">
+                                <div class="node-title">Benepay Next.js Portal</div>
+                                <div class="node-sub">Client & Admin Gateway</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flow-arrow">▼</div>
+
+                    <div class="tier" data-label="Orchestration Tier (Semantic Kernel / Genkit)">
+                        <div class="nodes-grid" style="grid-template-columns: 1fr;">
+                            <div class="node" style="border-color: #10b981;">
+                                <div class="node-title">Supervisor Agent</div>
+                                <div class="node-sub">Cognitive Router & State Manager (GPT-4o / Gemini Pro)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flow-arrow">▼</div>
+
+                    <div class="tier" data-label="Agentic Intelligence Tier">
+                        <div class="nodes-grid">
+                            <div class="node">
+                                <div class="node-title">Vision Agent</div>
+                                <div class="node-sub">Multimodal Trust Deed Parsing</div>
+                            </div>
+                            <div class="node">
+                                <div class="node-title">Registry Agent</div>
+                                <div class="node-sub">Companies House API Graphing</div>
+                            </div>
+                            <div class="node">
+                                <div class="node-title">Risk Agent</div>
+                                <div class="node-sub">FATF / OFAC Sanctions RAG</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flow-arrow">▼</div>
+
+                    <div class="tier" data-label="Data & Storage Tier">
+                        <div class="nodes-grid">
+                            <div class="node">
+                                <div class="node-title">Vector Store</div>
+                                <div class="node-sub">Azure AI Search / AlloyDB pgvector</div>
+                            </div>
+                            <div class="node">
+                                <div class="node-title">AWS S3 Secure Vault</div>
+                                <div class="node-sub">Encrypted Enterprise Bucket</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="arch-section">
+                <h2>2. Enterprise Tech Stack Topologies</h2>
+                <div class="stack-grid">
+                    <div class="stack-card">
+                        <h3><span style="color:#4285F4;font-weight:900;">G</span> Google Cloud</h3>
+                        <ul>
+                            <li><strong>Agent Orchestrator:</strong> Vertex AI Agent Builder & Reasoning Engine (LangChain)</li>
+                            <li><strong>Intelligence Core:</strong> Gemini 1.5 Pro (Multimodal, 1M+ context for dense Trust Deeds)</li>
+                            <li><strong>Vector Database:</strong> AlloyDB for PostgreSQL (with <code>pgvector</code>)</li>
+                            <li><strong>Document Parser:</strong> Google Cloud Document AI (OCR & MRZ extraction)</li>
+                            <li><strong>Secure Vault:</strong> Cloud Storage (or AWS S3 cross-cloud integration)</li>
+                        </ul>
+                    </div>
+                    <div class="stack-card">
+                        <h3><span style="color:#0078D4;font-weight:900;">A</span> Azure AI Foundry</h3>
+                        <ul>
+                            <li><strong>Agent Orchestrator:</strong> Azure AI Studio (Prompt flow) & Microsoft AutoGen</li>
+                            <li><strong>Intelligence Core:</strong> Azure OpenAI Service (GPT-4o / GPT-4 Turbo)</li>
+                            <li><strong>Vector Database:</strong> Azure AI Search (Hybrid + Semantic Ranking)</li>
+                            <li><strong>Document Parser:</strong> Azure AI Document Intelligence</li>
+                            <li><strong>Secure Vault:</strong> Azure Blob Storage (or AWS S3 integration)</li>
+                        </ul>
+                    </div>
+                    <div class="stack-card">
+                        <h3><span style="color:#FF9900;font-weight:900;">a</span> AWS (Amazon Bedrock)</h3>
+                        <ul>
+                            <li><strong>Agent Orchestrator:</strong> Amazon Bedrock Agents (with Action Groups & AWS Lambda)</li>
+                            <li><strong>Intelligence Core:</strong> Anthropic Claude 3.5 Sonnet (via Bedrock)</li>
+                            <li><strong>Vector Database:</strong> Amazon OpenSearch Serverless (Vector Engine)</li>
+                            <li><strong>Document Parser:</strong> Amazon Textract (Financial document querying)</li>
+                            <li><strong>Secure Vault:</strong> Amazon S3 (Encrypted, Object Lock for WORM compliance)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 3: BENEPAY 15-POINT DEMO -->
+    <div id="tab-demo" class="tab-content">
+        <div class="bene-header">
+            <div class="bene-logo">benepay.</div>
+            <div class="role-switcher">
+                <button id="btn-client" class="role-btn active" onclick="switchRole('client')">Client Portal</button>
+                <button id="btn-admin" class="role-btn" onclick="switchRole('admin')">Admin (Dipankar)</button>
+                <button id="btn-provider" class="role-btn" onclick="switchRole('provider')">Payment Provider</button>
+            </div>
+        </div>
+
+        <!-- ======================= -->
+        <!-- VIEW: CLIENT            -->
+        <!-- ======================= -->
+        <div id="view-client" class="role-view active">
+            <div class="bene-card" id="main-client-card">
+                <div class="futuristic-scanner"></div>
+                
+                <!-- Step A: Login -->
+                <div id="c-step-1" class="demo-step active">
+                    <div class="bene-title">Secure Portal Login</div>
+                    <div class="bene-subtitle">Enter your email to receive an OTP.</div>
+                    <div class="bene-input-group">
+                        <label class="bene-label">Business Email</label>
+                        <input type="email" class="bene-input" value="director@acmecorp.com" />
+                    </div>
+                    <button class="bene-btn" onclick="nextClientStep(2)">Verify OTP</button>
+                </div>
+
+                <!-- Step B: Reg Input -->
+                <div id="c-step-2" class="demo-step">
+                    <div class="bene-title">Welcome to Benepay Onboarding</div>
+                    <div class="bene-subtitle">Please enter your Company Registration Number. Our Agentic AI will autonomously crawl public registries.</div>
+                    <div class="bene-input-group" style="max-width: 300px;">
+                        <label class="bene-label">Company Registration Number</label>
+                        <input type="text" id="reg-number" class="bene-input" value="01234567" />
+                    </div>
+                    <button class="bene-btn" onclick="startAgenticPrefill()">Validate & Auto-Fill</button>
+                </div>
+
+                <!-- Step C: Agentic Crawl & Yes/No Loop -->
+                <div id="c-step-3" class="demo-step">
+                    <div class="bene-title">Agentic Swarm Crawling...</div>
+                    <div class="console-grid">
+                        <div class="console-pane"><div class="pane-header">Registry Crawler</div><div class="pane-body" id="log-reg"></div></div>
+                    </div>
+                    
+                    <div id="verify-box" style="display:none; margin-top:2rem; background:#f8fafc; padding:2rem; border-radius:8px; border:1px solid var(--bene-primary);">
+                        <h4 style="margin-bottom:1rem; color:var(--bene-text);">Data Fetched Successfully. Are these details correct?</h4>
+                        <div style="font-size:0.9rem; margin-bottom:1.5rem; line-height:1.6;">
+                            <strong>Company:</strong> Acme Corporation Ltd<br>
+                            <strong>Directors:</strong> John Doe<br>
+                            <strong>Shareholding:</strong> John Doe (100%)
+                        </div>
+                        <div style="display:flex; gap:1rem;">
+                            <button class="bene-btn bene-btn-success" onclick="startGapAnalysis()">Yes, Details are Correct</button>
+                            <button class="bene-btn bene-btn-secondary" onclick="nextClientStep(2)">No, Re-enter Reg Number</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step D: Full Comprehensive Spec Form -->
+                <div id="c-step-4" class="demo-step">
+                    <div class="bene-title">Agentic Gap Analysis</div>
+                    <div class="bene-subtitle" id="scan-text">Our AI has mapped the public data against Benepay's strict compliance schema. Please fill in the highlighted missing mandatory fields.</div>
+                    
+                    <div class="progress-container">
+                        <div class="progress-circle"><span class="progress-val">50%</span></div>
+                        <div class="progress-text"><h4>KYC Application Profile</h4><p>Missing mandatory fields detected.</p></div>
+                        <button class="bene-btn bene-btn-secondary" onclick="alert('Secure link emailed. You can resume later.')">Save for Later</button>
+                    </div>
+
+                    <!-- Accordion 1: Company Info -->
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAcc('acc-comp')">Company Information <span>▼</span></div>
+                        <div class="accordion-body active" id="acc-comp">
+                            <div class="form-grid">
+                                <div><label class="bene-label">Registered Company Name *</label><input type="text" class="bene-input agent-fetched" data-fetch-val="Acme Corporation Ltd" value="" readonly style="background:#f1f5f9;" /></div>
+                                <div><label class="bene-label">Company Registration Number *</label><input type="text" class="bene-input agent-fetched" data-fetch-val="01234567" value="" readonly style="background:#f1f5f9;"/></div>
+                                <div><label class="bene-label">Date of Incorporation *</label><input type="text" class="bene-input agent-fetched" data-fetch-val="2015-06-12" value="" readonly style="background:#f1f5f9;" /></div>
+                                <div><label class="bene-label">Country of Registration *</label><input type="text" class="bene-input agent-fetched" data-fetch-val="United Kingdom" value="" readonly style="background:#f1f5f9;" /></div>
+                                <div class="form-full"><label class="bene-label">Registered Address *</label><textarea class="bene-textarea agent-fetched-txt" data-fetch-val="123 Innovation Drive, London, UK" readonly style="min-height:60px; background:#f1f5f9;"></textarea></div>
+                                <div class="form-full">
+                                    <label class="bene-label">Business Website</label>
+                                    <input type="text" class="bene-input input-warning" id="veracity-website" value="acmecorp" />
+                                    <span class="warning-text">AI Veracity Check: Does not appear to be a valid URL.</span>
+                                </div>
+                                <div class="form-full"><label class="bene-label highlight-text">MANDATORY: Description of Nature of Business</label><textarea class="bene-textarea input-highlight" placeholder="Describe what your business does in detail"></textarea></div>
+                                <div><label class="bene-label">Industry *</label><input type="text" class="bene-input" value="Financial Technology" /></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Accordion 2: Director Info -->
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAcc('acc-dir')">Director & Ownership Info <span>▼</span></div>
+                        <div class="accordion-body" id="acc-dir">
+                            <div class="form-grid">
+                                <div><label class="bene-label">Director Full Name *</label><input type="text" class="bene-input agent-fetched" data-fetch-val="John Doe" value="" readonly style="background:#f1f5f9;" /></div>
+                                <div><label class="bene-label">Director Date of Birth *</label><input type="date" class="bene-input" /></div>
+                                <div class="form-full"><label class="bene-label">Director Residential Address *</label><textarea class="bene-textarea" style="min-height:60px;"></textarea></div>
+                                <div class="form-full"><label class="bene-label highlight-text">MANDATORY: Does the director reside in the UK?</label>
+                                    <select class="bene-select input-highlight"><option value="">Select Option...</option><option>Yes</option><option>No</option></select>
+                                    <div style="font-size:0.75rem; color:#64748b; margin-top:4px;">If Yes, we can perform a light EKYC removing the need for POA.</div>
+                                </div>
+                                <div class="form-full"><label class="bene-label highlight-text">MANDATORY: Ownership Structure Details</label><textarea class="bene-textarea input-highlight" placeholder="List all shareholders owning 25% or more..."></textarea></div>
+                                <div class="form-full"><label class="bene-label highlight-text">MANDATORY: Are any shareholders a Trust or Nominee Company?</label>
+                                    <select class="bene-select input-highlight"><option value="">Select Option...</option><option>No</option><option>Yes - Trust</option><option>Yes - Nominee Company</option><option>Both</option></select>
+                                </div>
+                                <div class="form-full"><label class="bene-label">Additional Platform Users (if any)</label><textarea class="bene-textarea" style="min-height:60px;" placeholder="List any colleagues who require access..."></textarea></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Accordion 3: Financial Info -->
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAcc('acc-fin')">Financial Information <span>▼</span></div>
+                        <div class="accordion-body" id="acc-fin">
+                            <div class="form-grid">
+                                <div class="form-full"><label class="bene-label highlight-text">MANDATORY: Reason for Transfer / Why are you moving money?</label><textarea class="bene-textarea input-highlight" style="min-height:60px;"></textarea></div>
+                                <div class="form-full"><label class="bene-label highlight-text">MANDATORY: Source of Funds</label><textarea class="bene-textarea input-highlight" style="min-height:60px;" placeholder="Describe the origin of the funds..."></textarea></div>
+                                <div class="form-full"><label class="bene-label highlight-text">MANDATORY: Funding of Account – Who is paying in?</label><textarea class="bene-textarea input-highlight" style="min-height:60px;"></textarea></div>
+                                <div class="form-full"><label class="bene-label highlight-text">MANDATORY: Payments Out of Account – Where are you paying to?</label><textarea class="bene-textarea input-highlight" style="min-height:60px;"></textarea></div>
+                                <div><label class="bene-label highlight-text">MANDATORY: Currency Pairs Required</label><input type="text" class="bene-input input-highlight" placeholder="e.g. GBP/USD, EUR/GBP" /></div>
+                                <div class="form-full"><label class="bene-label highlight-text">MANDATORY: Expected Transaction Frequency and Volume</label><textarea class="bene-textarea input-highlight" style="min-height:60px;" placeholder="e.g. weekly, monthly; estimated amounts..."></textarea></div>
+                                <div class="form-full"><label class="bene-label highlight-text">MANDATORY: Countries of Source / Beneficiary</label><textarea class="bene-textarea input-highlight" style="min-height:60px;" placeholder="List all countries..."></textarea></div>
+                                <div class="form-full"><label class="bene-label highlight-text">MANDATORY: Do any transactions involve high-risk countries?</label>
+                                    <select class="bene-select input-highlight"><option value="">Select Option...</option><option>No</option><option>Yes</option></select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Accordion 4: Documents -->
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAcc('acc-doc')">Document Uploads (AWS S3 Sync) <span>▼</span></div>
+                        <div class="accordion-body" id="acc-doc">
+                            <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">All documents are securely uploaded directly to our dedicated, encrypted AWS S3 Vault.</p>
+                            <div class="form-grid">
+                                <div class="gdrive-upload"><span class="gdrive-icon">▲</span> Signed Trading Agreement *</div>
+                                <div class="gdrive-upload"><span class="gdrive-icon">▲</span> Director's Signed Account Agreement *</div>
+                                <div class="gdrive-upload"><span class="gdrive-icon">▲</span> Proof of Identity (Passport) *</div>
+                                <div class="gdrive-upload"><span class="gdrive-icon">▲</span> Proof of Address (Optional if EKYC)</div>
+                                <div class="gdrive-upload"><span class="gdrive-icon">▲</span> Trust Deed Extract (Optional)</div>
+                                <div class="gdrive-upload"><span class="gdrive-icon">▲</span> Nominee Agreement Copy (Optional)</div>
+                                <div class="gdrive-upload"><span class="gdrive-icon">▲</span> Recent Company Bank Statement *</div>
+                                <div class="gdrive-upload"><span class="gdrive-icon">▲</span> Latest Annual Audited Accounts *</div>
+                                <div class="gdrive-upload"><span class="gdrive-icon">▲</span> Certificate of Incorporation *</div>
+                                <div class="gdrive-upload"><span class="gdrive-icon">▲</span> Ownership & Mgmt Structure *</div>
+                                <div class="gdrive-upload"><span class="gdrive-icon">▲</span> Recent Agreements / Invoices *</div>
+                                <div class="gdrive-upload"><span class="gdrive-icon">▲</span> Background Info Document *</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 2rem; display:flex; justify-content:flex-end;">
+                        <button class="bene-btn" onclick="submitVeracityCheck()">Run Veracity Check & Submit</button>
+                    </div>
+                </div>
+
+                <!-- Step E: Success -->
+                <div id="c-step-5" class="demo-step">
+                    <div style="text-align:center; padding: 3rem 0;">
+                        <div style="width:60px; height:60px; background:#10b981; color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:2rem; margin:0 auto 1rem;">✓</div>
+                        <div class="bene-title">Application Submitted Successfully</div>
+                        <div class="bene-subtitle">Files encrypted and saved to AWS S3. Status changed to <strong>Submitted</strong>. Admin notified.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======================= -->
+        <!-- VIEW: ADMIN (DIPANKAR)  -->
+        <!-- ======================= -->
+        <div id="view-admin" class="role-view">
+            <div class="bene-card" style="max-width: 1100px;">
+                <div class="bene-title">Administrator Dashboard (D. Haldar)</div>
+                <div class="bene-subtitle">AI-Assisted Discrepancy Resolution, AWS S3 Documents, & Human-in-the-Loop Gateway.</div>
+                
+                <table style="width:100%; text-align:left; border-collapse: collapse; margin-bottom:1rem;">
+                    <tr style="border-bottom:1px solid #e2e8f0; background:#f8fafc;"><th style="padding:1rem;">Company</th><th style="padding:1rem;">Risk Score</th><th style="padding:1rem;">Status</th><th style="padding:1rem;">Action</th></tr>
+                    <tr>
+                        <td style="padding:1rem;">Acme Corporation Ltd</td>
+                        <td style="padding:1rem;"><span style="background:#fee2e2; color:#ef4444; padding:0.25rem 0.5rem; border-radius:4px; font-weight:bold; font-size:0.8rem;">HIGH RISK (2 Flags)</span></td>
+                        <td style="padding:1rem;"><span style="color:#f59e0b;font-weight:bold;">Pending Review</span></td>
+                        <td style="padding:1rem;"><button class="bene-btn" style="padding:0.4rem 1rem;" onclick="viewAdminDetail()">Resolve Discrepancies</button></td>
+                    </tr>
+                </table>
+
+                <div id="admin-detail" style="display:none; margin-top:2rem; border-top:1px solid #e2e8f0; padding-top:2rem;">
+                    <div style="display:grid; grid-template-columns: 2fr 1fr; gap: 2.5rem;">
+                        <!-- Left Column: Discrepancy Resolution -->
+                        <div>
+                            <div class="bene-label" style="font-size:1rem; margin-bottom:1rem; color:var(--bene-text);">Human-in-the-Loop: Discrepancy Resolution Queue</div>
+                            
+                            <!-- Discrepancy 1 -->
+                            <div style="background:#fffbeb; border:1px solid #f59e0b; border-radius:6px; padding:1.25rem; margin-bottom:1rem;">
+                                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.5rem;">
+                                    <div style="font-weight:700; color:#b45309; display:flex; align-items:center; gap:0.5rem;">
+                                        ⚠️ AI Veracity Flag: Invalid Email Domain
+                                    </div>
+                                    <span style="background:#b45309; color:#fff; padding:0.2rem 0.5rem; border-radius:4px; font-size:0.7rem; font-weight:bold;">High Confidence</span>
+                                </div>
+                                <p style="font-size:0.85rem; color:#475569; margin-bottom:1rem;">Client submitted <code style="background:#f1f5f9; padding:2px 4px; border-radius:3px;">director@acmecorp</code> which failed the syntactical TLD check.</p>
+                                
+                                <div style="display:flex; gap:0.5rem;">
+                                    <button class="bene-btn bene-btn-secondary" style="font-size:0.8rem; padding:0.4rem 0.8rem;" onclick="this.parentElement.parentElement.style.opacity='0.5'; this.innerText='Fixed';">Auto-Fix to @acmecorp.com</button>
+                                    <button class="bene-btn bene-btn-secondary" style="font-size:0.8rem; padding:0.4rem 0.8rem;" onclick="alert('Notification sent to client.')">Ping Client to Correct</button>
+                                </div>
+                            </div>
+
+                            <!-- Discrepancy 2 -->
+                            <div style="background:#fef2f2; border:1px solid #ef4444; border-radius:6px; padding:1.25rem; margin-bottom:1rem;">
+                                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.5rem;">
+                                    <div style="font-weight:700; color:#b91c1c; display:flex; align-items:center; gap:0.5rem;">
+                                        🛑 AML Risk Agent Flag: High-Risk Jurisdiction Detected
+                                    </div>
+                                </div>
+                                <p style="font-size:0.85rem; color:#475569; margin-bottom:1rem;">Client indicated transactions involve high-risk countries. The uploaded "Source of Funds" documentation (<a href="#" style="color:#2563eb;">Bank_Statement_April.pdf</a>) shows incoming wire transfers from a FATF grey-list region.</p>
+                                
+                                <div style="background:#fff; border:1px solid #e2e8f0; padding:0.75rem; border-radius:4px; margin-bottom:1rem; font-size:0.8rem;">
+                                    <strong style="color:var(--bene-text);">AI Recommendation:</strong> Request additional "Enhanced Due Diligence (EDD)" documentation regarding these specific wires before forwarding to Payment Provider.
+                                </div>
+
+                                <div style="display:flex; gap:0.5rem;">
+                                    <button class="bene-btn bene-btn-danger" style="font-size:0.8rem; padding:0.4rem 0.8rem;" onclick="alert('Client notified to upload EDD docs.')">Request EDD Documents</button>
+                                    <button class="bene-btn bene-btn-secondary" style="font-size:0.8rem; padding:0.4rem 0.8rem;" onclick="this.parentElement.parentElement.style.opacity='0.5'; this.innerText='Overridden';">Override (Manual Approval)</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Docs & Logs -->
+                        <div>
+                            <div class="bene-label">AWS S3 Assets</div>
+                            <div style="background:#f8fafc; padding:1rem; border-radius:6px; font-size:0.85rem; margin-bottom:1.5rem; border:1px solid #e2e8f0;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;"><span style="color:#2563eb; cursor:pointer; text-decoration:underline;" onclick="openDocModal()">📄 Signed_Agreement.pdf</span> <span style="color:#10b981; font-weight:bold;">✓ AI Verified</span></div>
+                                <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;"><span style="color:#2563eb; cursor:pointer; text-decoration:underline;" onclick="openDocModal()">📄 Bank_Statement.pdf</span> <span style="color:#ef4444; font-weight:bold;">⚠️ Flagged</span></div>
+                                <div style="display:flex; justify-content:space-between;"><span style="color:#2563eb; cursor:pointer; text-decoration:underline;" onclick="openDocModal()">📄 Directors_Passport.jpg</span> <span style="color:#10b981; font-weight:bold;">✓ AI Verified</span></div>
+                            </div>
+                            
+                            <div class="bene-label">Audit History</div>
+                            <div class="audit-log">
+                                <div class="audit-item"><span class="audit-time">10:00</span> Client logged in</div>
+                                <div class="audit-item"><span class="audit-time">10:01</span> Swarm auto-filled reg data</div>
+                                <div class="audit-item"><span class="audit-time">10:05</span> Client completed gaps</div>
+                                <div class="audit-item"><span class="audit-time">10:06</span> Risk Agent flagged Bank Doc</div>
+                                <div class="audit-item"><span class="audit-time">10:06</span> Status: PENDING REVIEW</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top:2rem; padding-top:2rem; border-top:1px solid #e2e8f0; display:flex; justify-content:flex-end; gap:1rem;">
+                        <button class="bene-btn bene-btn-secondary" onclick="alert('Dossier sent back to client for correction.')">Return to Client</button>
+                        <button class="bene-btn bene-btn-success" onclick="alert('Discrepancies cleared. Forwarded to Payment Provider.'); document.getElementById('btn-provider').click();">Resolve & Forward to Provider</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======================= -->
+        <!-- VIEW: PAYMENT PROVIDER  -->
+        <!-- ======================= -->
+        <div id="view-provider" class="role-view">
+            <div class="bene-card" style="max-width: 800px; text-align:center;">
+                <div class="bene-title">Payment Provider Gateway</div>
+                <div class="bene-subtitle">Final verification queue forwarded by Benepay Admin.</div>
+                
+                <div style="background:#f8fafc; padding:2rem; border-radius:8px; border:1px solid #e2e8f0; margin: 2rem 0; text-align:left;">
+                    <h4>Acme Corporation Ltd</h4>
+                    <p style="font-size:0.85rem; color:#64748b; margin-bottom:1rem;">Full KYC Dossier verified by Benepay Admin.</p>
+                    <div style="display:flex; gap: 1rem; margin-top: 1rem;">
+                        <button class="bene-btn bene-btn-success" style="width:100%" onclick="alert('Account Live. Client and Admin notified via email.')">Final Verify & Activate</button>
+                        <button class="bene-btn bene-btn-danger" style="width:100%" onclick="alert('Rejected.')">Reject</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Document Modal -->
+    <div id="doc-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15,23,42,0.9); z-index:9999; align-items:center; justify-content:center; padding: 2rem;">
+        <div style="background:#fff; border-radius:12px; width:100%; max-width:1200px; height:85vh; display:flex; flex-direction:column; overflow:hidden; position:relative;">
+            <div style="background:#1e293b; padding:1rem 2rem; display:flex; justify-content:space-between; align-items:center; color:#fff;">
+                <h3 style="font-size:1.2rem; font-weight:600; display:flex; align-items:center; gap:0.5rem;"><span style="color:#10b981;">●</span> Vision Agent Forensics: Directors_Passport.jpg</h3>
+                <button onclick="closeDocModal()" style="background:none; border:none; color:#fff; font-size:1.5rem; cursor:pointer;">&times;</button>
+            </div>
+            
+            <div style="display:grid; grid-template-columns: 2fr 1fr; flex:1; overflow:hidden;">
+                <!-- Document Viewer with Rubber Banding -->
+                <div style="background:#f1f5f9; position:relative; overflow:auto; padding:2rem; display:flex; align-items:center; justify-content:center;">
+                    <div style="position:relative; width: 600px; height: 400px; background: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.15); border-radius:8px; border: 1px solid #cbd5e1; overflow:hidden; display:flex; flex-direction:column; padding:1.5rem; font-family:monospace;">
+                        <!-- Passport Header -->
+                        <div style="display:flex; justify-content:space-between; border-bottom:2px solid #94a3b8; padding-bottom:0.5rem; margin-bottom:1rem;">
+                            <div style="color:#0f172a; font-weight:bold; font-size:1.2rem; letter-spacing:2px;">PASSPORT</div>
+                            <div style="color:#64748b; font-size:1rem;">GBR</div>
+                        </div>
+                        
+                        <div style="display:flex; gap: 2rem; flex:1;">
+                            <!-- Photo Placeholder -->
+                            <div style="width:120px; height:160px; background:#e2e8f0; border-radius:4px; border:2px solid #cbd5e1; display:flex; align-items:center; justify-content:center; color:#94a3b8;">
+                                [ PHOTO ]
+                            </div>
+                            
+                            <!-- Data Fields -->
+                            <div style="flex:1; display:grid; grid-template-columns: 1fr 1fr; gap:1rem;">
+                                <div>
+                                    <div style="font-size:0.6rem; color:#64748b;">Type</div>
+                                    <div style="font-weight:bold;">P</div>
+                                </div>
+                                <div>
+                                    <div style="font-size:0.6rem; color:#64748b;">Country Code</div>
+                                    <div style="font-weight:bold;">GBR</div>
+                                </div>
+                                <div style="grid-column: span 2;">
+                                    <div style="font-size:0.6rem; color:#64748b;">Surname</div>
+                                    <div style="font-weight:bold; font-size:1.1rem;">DOE</div>
+                                </div>
+                                <div style="grid-column: span 2;">
+                                    <div style="font-size:0.6rem; color:#64748b;">Given Names</div>
+                                    <div style="font-weight:bold; font-size:1.1rem;">JOHN</div>
+                                </div>
+                                <div>
+                                    <div style="font-size:0.6rem; color:#64748b;">Nationality</div>
+                                    <div style="font-weight:bold;">BRITISH CITIZEN</div>
+                                </div>
+                                <div>
+                                    <div style="font-size:0.6rem; color:#64748b;">Date of Birth</div>
+                                    <div style="font-weight:bold;">15 MAY / MAI 80</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- MRZ Zone -->
+                        <div style="margin-top:auto; font-family:'Courier New', Courier, monospace; font-size:1.1rem; letter-spacing:2px; font-weight:bold; color:#0f172a; border-top:1px dashed #cbd5e1; padding-top:1.5rem; padding-bottom:1rem; text-align:center;">
+                            P&lt;GBRDOE&lt;&lt;JOHN&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br>
+                            1234567897GBR8005152M2501019&lt;&lt;&lt;&lt;&lt;&lt;&lt;00
+                        </div>
+
+                        <!-- Rubber Bands -->
+                        <div class="rubber-band" style="top: 28%; left: 35%; width: 50%; height: 25%; border: 2px solid #10b981; position: absolute; background: rgba(16,185,129,0.1);">
+                            <span style="position:absolute; top:-20px; left:0; background:#10b981; color:#fff; font-size:0.65rem; padding:2px 4px; border-radius:2px; font-weight:bold;">FULL NAME (100%)</span>
+                        </div>
+                        <div class="rubber-band" style="top: 55%; left: 55%; width: 40%; height: 12%; border: 2px solid #10b981; position: absolute; background: rgba(16,185,129,0.1);">
+                            <span style="position:absolute; top:-20px; left:0; background:#10b981; color:#fff; font-size:0.65rem; padding:2px 4px; border-radius:2px; font-weight:bold;">DOB (99%)</span>
+                        </div>
+                        <div class="rubber-band" style="top: 75%; left: 5%; width: 90%; height: 20%; border: 2px solid #2563eb; position: absolute; background: rgba(37,99,235,0.1);">
+                            <span style="position:absolute; top:-20px; left:0; background:#2563eb; color:#fff; font-size:0.65rem; padding:2px 4px; border-radius:2px; font-weight:bold;">MRZ ZONE VERIFICATION</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Extraction Results -->
+                <div style="background:#fff; border-left:1px solid #e2e8f0; padding:2rem; overflow-y:auto;">
+                    <h4 style="font-size:1.1rem; color:#0f172a; margin-bottom:1.5rem; padding-bottom:0.5rem; border-bottom:1px solid #e2e8f0;">Structured Extraction</h4>
+                    
+                    <div style="margin-bottom:1.5rem;">
+                        <div style="font-size:0.75rem; color:#64748b; font-weight:700; text-transform:uppercase; margin-bottom:0.25rem;">Document Type</div>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-weight:600; color:#0f172a;">UK e-Passport</span>
+                            <span style="color:#10b981;">✓ 99.8%</span>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom:1.5rem;">
+                        <div style="font-size:0.75rem; color:#64748b; font-weight:700; text-transform:uppercase; margin-bottom:0.25rem;">Full Name (Matches Registry)</div>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-weight:600; color:#0f172a;">John Doe</span>
+                            <span style="color:#10b981;">✓ Verified</span>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom:1.5rem;">
+                        <div style="font-size:0.75rem; color:#64748b; font-weight:700; text-transform:uppercase; margin-bottom:0.25rem;">Date of Birth</div>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-weight:600; color:#0f172a;">1980-05-15</span>
+                            <span style="color:#10b981;">✓ Verified</span>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom:2rem; padding:1rem; background:#ecfdf5; border:1px solid #10b981; border-radius:6px;">
+                        <div style="font-size:0.8rem; font-weight:700; color:#065f46; margin-bottom:0.5rem;">Cryptographic MRZ Check</div>
+                        <p style="font-size:0.75rem; color:#047857; margin-bottom:0;">Checksums valid. Document is not forged or tampered. Passed against INTERPOL SLTD database.</p>
+                    </div>
+
+                    <button class="bene-btn" style="width:100%;" onclick="closeDocModal()">Close Forensics Viewer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/@studio-freight/lenis@1.0.39/dist/lenis.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        // Tab Switching Logic
+        function switchTab(tabId, btnElement) {
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            btnElement.classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            
+            // Fix: removed lenis.stop() to restore native scrolling on all tabs
+            if(tabId === 'tab-pitch') { 
+                document.getElementById('webgl-canvas').style.display = 'block'; 
+                document.querySelector('.ambient-gradient').style.display = 'block'; 
+            } else { 
+                document.getElementById('webgl-canvas').style.display = 'none'; 
+                document.querySelector('.ambient-gradient').style.display = 'none'; 
+            }
+        }
+
+        // Modal Logic
+        function openDocModal() {
+            const modal = document.getElementById('doc-modal');
+            modal.style.display = 'flex';
+            gsap.fromTo('.rubber-band', 
+                { opacity: 0, scale: 1.1 }, 
+                { opacity: 1, scale: 1, duration: 0.5, stagger: 0.2, ease: "power2.out", delay: 0.2 }
+            );
+        }
+        function closeDocModal() {
+            document.getElementById('doc-modal').style.display = 'none';
+        }
+
+        // Role Switching Logic
+        function switchRole(role) {
+            document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('btn-' + role).classList.add('active');
+            document.querySelectorAll('.role-view').forEach(v => v.classList.remove('active'));
+            document.getElementById('view-' + role).classList.add('active');
+        }
+
+        // Client Mockup Flow
+        function nextClientStep(step) {
+            document.querySelectorAll('.demo-step').forEach(s => s.classList.remove('active'));
+            document.getElementById('c-step-' + step).classList.add('active');
+            document.getElementById('main-client-card').classList.remove('scanning');
+        }
+
+        function startAgenticPrefill() {
+            nextClientStep(3);
+            document.getElementById('verify-box').style.display = 'none';
+            const reg = document.getElementById('log-reg');
+            reg.innerHTML = '';
+            
+            const addLog = (txt) => { reg.innerHTML += `<div>> ${txt}</div>`; reg.scrollTop = reg.scrollHeight; };
+            
+            setTimeout(() => addLog("Hitting Companies House API..."), 400);
+            setTimeout(() => addLog("Validating Reg No... <span style='color:#10b981'>SUCCESS</span>"), 1200);
+            setTimeout(() => addLog("Fetching Directors & Shareholding..."), 2000);
+            
+            setTimeout(() => {
+                document.getElementById('verify-box').style.display = 'block';
+            }, 3000);
+        }
+
+        function startGapAnalysis() {
+            nextClientStep(4);
+            document.getElementById('main-client-card').classList.add('scanning');
+            
+            // Auto open the first two accordions to show the typing
+            document.getElementById('acc-comp').classList.add('active');
+            document.getElementById('acc-dir').classList.add('active');
+
+            setTimeout(() => {
+                document.getElementById('main-client-card').classList.remove('scanning');
+                document.getElementById('scan-text').innerHTML = "<strong>AI Scan Complete.</strong> Agentic Swarm is autonomously filling fetched data. Please complete the remaining highlighted fields.";
+                
+                // Animate typing of fetched data
+                const fetchedInputs = document.querySelectorAll('.agent-fetched, .agent-fetched-txt');
+                fetchedInputs.forEach((input, index) => {
+                    const finalVal = input.getAttribute('data-fetch-val');
+                    input.value = "";
+                    input.style.border = "2px solid #10b981";
+                    input.style.boxShadow = "0 0 10px rgba(16,185,129,0.3)";
+                    
+                    // Simulate typing
+                    let i = 0;
+                    setTimeout(() => {
+                        const typeInterval = setInterval(() => {
+                            input.value += finalVal.charAt(i);
+                            i++;
+                            if(i >= finalVal.length) {
+                                clearInterval(typeInterval);
+                                // Add checkmark badge next to label if not exists
+                                const label = input.previousElementSibling;
+                                if(label && !label.innerHTML.includes('✓')) {
+                                    label.innerHTML += ' <span style="color:#10b981; font-size:0.75rem; font-weight:bold; background:#ecfdf5; padding:2px 6px; border-radius:10px; margin-left:8px; display:inline-block; animation: fadeIn 0.5s;">✓ Fetched by Swarm</span>';
+                                }
+                            }
+                        }, 25);
+                    }, 500 + (index * 300)); // Stagger typing
+                });
+            }, 2000);
+        }
+
+        function submitVeracityCheck() {
+            const websiteInput = document.getElementById('veracity-website');
+            
+            if (!websiteInput.value.includes('.com') && !websiteInput.value.includes('.co.uk') && !websiteInput.value.includes('http')) {
+                // Force user to acknowledge warning
+                if (confirm("AI Veracity Check: 'Business Website' appears to be an invalid URL format. Submit anyway?")) {
+                    nextClientStep(5);
+                }
+            } else {
+                nextClientStep(5);
+            }
+        }
+
+        function toggleAcc(id) {
+            const el = document.getElementById(id);
+            if(el.classList.contains('active')) el.classList.remove('active');
+            else el.classList.add('active');
+        }
+
+        // Admin Flow
+        function viewAdminDetail() {
+            document.getElementById('admin-detail').style.display = 'block';
+        }
+
+        // Pitch Animations & WebGL
+        const lenis = new Lenis({ duration: 1.2, smooth: true });
+        function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+        requestAnimationFrame(raf);
+        gsap.registerPlugin(ScrollTrigger);
+        lenis.on('scroll', ScrollTrigger.update);
+        gsap.ticker.add((time)=>{ lenis.raf(time * 1000) });
+        gsap.ticker.lagSmoothing(0, 0);
+
+        const initWebGL = () => {
+            const canvas = document.getElementById('webgl-canvas');
+            if(!canvas) return;
+            const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 0, 400);
+
+            const particleCount = 600; const maxDistance = 85; 
+            const particles = new THREE.BufferGeometry();
+            const particlePositions = new Float32Array(particleCount * 3);
+            const unstructuredPositions = new Float32Array(particleCount * 3);
+            const structuredPositions = new Float32Array(particleCount * 3);
+            const particleVelocities = [];
+
+            for (let i = 0; i < particleCount; i++) {
+                const x1 = (Math.random() - 0.5) * 1000; const y1 = (Math.random() - 0.5) * 1000; const z1 = (Math.random() - 0.5) * 1000;
+                unstructuredPositions[i*3] = x1; unstructuredPositions[i*3+1] = y1; unstructuredPositions[i*3+2] = z1;
+                const phi = Math.acos(-1 + (2 * i) / particleCount); const theta = Math.sqrt(particleCount * Math.PI) * phi;
+                const radius = 140 + (Math.random() * 30); 
+                structuredPositions[i*3] = radius * Math.cos(theta) * Math.sin(phi); structuredPositions[i*3+1] = radius * Math.sin(theta) * Math.sin(phi); structuredPositions[i*3+2] = radius * Math.cos(phi);
+                particlePositions[i*3] = x1; particlePositions[i*3+1] = y1; particlePositions[i*3+2] = z1;
+                particleVelocities.push({ x: (Math.random() - 0.5)*0.8, y: (Math.random() - 0.5)*0.8, z: (Math.random() - 0.5)*0.8 });
+            }
+
+            particles.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+            const pointCloud = new THREE.Points(particles, new THREE.PointsMaterial({ color: 0x046bd2, size: 5, transparent: true, opacity: 0.9 }));
+            scene.add(pointCloud);
+
+            const linesGeometry = new THREE.BufferGeometry();
+            const segments = particleCount * particleCount;
+            linesGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(segments * 3), 3));
+            linesGeometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(segments * 3), 3));
+            const linesMaterial = new THREE.LineBasicMaterial({ transparent: true, opacity: 0.5, vertexColors: true });
+            const lineMesh = new THREE.LineSegments(linesGeometry, linesMaterial);
+            scene.add(lineMesh);
+
+            const config = { structureLevel: 0.0 };
+            gsap.to(config, { structureLevel: 1.0, scrollTrigger: { trigger: "#sec-solution", start: "top center", end: "bottom center", scrub: 1 } });
+
+            let time = 0;
+            const tick = () => {
+                const pitchTab = document.getElementById('tab-pitch');
+                if (pitchTab && pitchTab.classList.contains('active')) {
+                    time += 0.02; let vertexpos = 0; let colorpos = 0; let numConnected = 0;
+                    const posAttr = particles.attributes.position.array; const linePos = lineMesh.geometry.attributes.position.array; const lineCol = lineMesh.geometry.attributes.color.array;
+
+                    for (let i = 0; i < particleCount; i++) {
+                        const i3 = i * 3;
+                        unstructuredPositions[i3] += particleVelocities[i].x; unstructuredPositions[i3+1] += particleVelocities[i].y; unstructuredPositions[i3+2] += particleVelocities[i].z;
+                        posAttr[i3] += ((unstructuredPositions[i3] * (1 - config.structureLevel) + structuredPositions[i3] * config.structureLevel) - posAttr[i3]) * 0.05;
+                        posAttr[i3+1] += ((unstructuredPositions[i3+1] * (1 - config.structureLevel) + structuredPositions[i3+1] * config.structureLevel) - posAttr[i3+1]) * 0.05;
+                        posAttr[i3+2] += ((unstructuredPositions[i3+2] * (1 - config.structureLevel) + structuredPositions[i3+2] * config.structureLevel) - posAttr[i3+2]) * 0.05;
+                    }
+                    particles.attributes.position.needsUpdate = true;
+
+                    const curDist = maxDistance + (config.structureLevel * 40);
+                    for (let i = 0; i < particleCount; i++) {
+                        for (let j = i + 1; j < particleCount; j++) {
+                            const dx = posAttr[i*3] - posAttr[j*3], dy = posAttr[i*3+1] - posAttr[j*3+1], dz = posAttr[i*3+2] - posAttr[j*3+2];
+                            const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+                            if (dist < curDist) {
+                                const pulse = (Math.sin(time * 4.0 + i) + 1) * 0.5; const glow = (1.0 - (dist / curDist)) * pulse;
+                                let r = 0.01 + (glow * 0.4); let g = 0.42 + (glow * 0.2); let b = 0.82 + (glow * 0.18);
+                                linePos[vertexpos++] = posAttr[i*3]; linePos[vertexpos++] = posAttr[i*3+1]; linePos[vertexpos++] = posAttr[i*3+2];
+                                linePos[vertexpos++] = posAttr[j*3]; linePos[vertexpos++] = posAttr[j*3+1]; linePos[vertexpos++] = posAttr[j*3+2];
+                                lineCol[colorpos++] = r; lineCol[colorpos++] = g; lineCol[colorpos++] = b; lineCol[colorpos++] = r; lineCol[colorpos++] = g; lineCol[colorpos++] = b;
+                                numConnected++;
+                            }
+                        }
+                    }
+                    lineMesh.geometry.setDrawRange(0, numConnected * 2);
+                    lineMesh.geometry.attributes.position.needsUpdate = true; lineMesh.geometry.attributes.color.needsUpdate = true;
+                    camera.position.x = Math.sin(time * 0.05) * 350; camera.position.z = Math.cos(time * 0.05) * 350; camera.lookAt(0,0,0);
+                    renderer.render(scene, camera);
+                }
+                requestAnimationFrame(tick);
+            };
+            tick();
+        };
+
+        const initAnimations = () => {
+            document.querySelectorAll('.reveal-heading, .reveal-heading-2').forEach(el => {
+                const text = el.innerHTML; el.innerHTML = '';
+                text.split('<br>').forEach(line => {
+                    if(!line.trim()) return;
+                    const w = document.createElement('span'); w.className = 'reveal-text';
+                    const i = document.createElement('span'); i.innerHTML = line;
+                    w.appendChild(i); el.appendChild(w); el.appendChild(document.createElement('br'));
+                });
+                gsap.fromTo(el.querySelectorAll('.reveal-text span'), { y: "110%" }, { scrollTrigger: { trigger: el, start: "top 85%" }, y: "0%", duration: 1.2, stagger: 0.1, ease: "power4.out" });
+            });
+            gsap.utils.toArray('.reveal-p, .reveal-card').forEach(el => {
+                gsap.fromTo(el, { opacity: 0, y: 40 }, { scrollTrigger: { trigger: el, start: "top 90%" }, opacity: 1, y: 0, duration: 1, ease: "power3.out" });
+            });
+        };
+
+        window.addEventListener('load', () => {
+            try { initWebGL(); } catch(e) { console.error("WebGL error:", e); }
+            try { initAnimations(); } catch(e) { console.error("GSAP error:", e); }
+        });
+    </script>
+</body>
+</html>
